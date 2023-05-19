@@ -20,6 +20,11 @@ fun scanToken(str: String): List<Token> {
 		while (str[strIdx].isWhitespace() || str[strIdx] == '\n' || str[strIdx] == '\r') {
 			line += if (str[strIdx] == '\n' || str[strIdx] == '\r') 1 else 0
 			strIdx++
+			if(strIdx >= strLen)
+			{
+				tokens.add(EndOfFile(line))
+				return tokens;
+			}
 		}
 
 		if (str.startsWith("//", strIdx)) {
@@ -27,7 +32,6 @@ fun scanToken(str: String): List<Token> {
 			while (strIdx < strLen && str[strIdx] != '\n' && str[strIdx] != '\r') {
 				strIdx++
 			}
-			line++
 			continue
 		}
 
@@ -92,14 +96,15 @@ fun scanToken(str: String): List<Token> {
 			)
 		} else if (str.startsWith("\'", strIdx, ignoreCase = true)) {
 			strIdx += 1
-			if (str[strIdx] != '\\') {
-				strIdx += 1
+			if (str[strIdx] == '\\') {
+				strIdx += 2
 				val char = escapeSequences[str[strIdx]] ?: str[strIdx]
 				tokens.add(CharTok(char, line))
 			} else {
 				tokens.add(CharTok(str[strIdx], line))
 				strIdx += 1
 			}
+			strIdx += 1
 		} else if (str[strIdx].isLetter() || str[strIdx] == '_') {
 			var span = 0
 			for (c in str.substring(strIdx)) {

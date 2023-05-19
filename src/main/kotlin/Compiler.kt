@@ -1,5 +1,7 @@
 import AST.Declaration
 import ASTTransforms.ASTPrinter
+import ASTTransforms.SymbolTable.SymbolTableGenerator
+import ASTTransforms.SymbolTable.symbol
 import Parser.CodeParser
 import Parser.ParserException
 import Tokenizer.Token
@@ -47,27 +49,30 @@ class Compiler {
 	fun runcode(lines: String) {
 		val tokens: List<Token> = scanToken(lines)
 		val codeParser: CodeParser = CodeParser(tokens as MutableList<Token>)
-		var hadError: Boolean
+		var hadError: Boolean = false
 		var errorNum = 0
 		var tree: List<Declaration> = listOf()
 		do {
 			try {
-				hadError = false
 				tree = tree + codeParser.parseProgram()
-				println(tree)
 			} catch (p: ParserException) {
 				hadError = true
 				errorNum++
 				println(p.s)
 				tree = codeParser.synchronize() + tree
 			}
-		} while (hadError)
+		} while (codeParser.hasTokens())
 		if (hadError) {
 			println("Had ${errorNum} error${if (errorNum == 1) "" else "s"}.")
+		}
+		val symbolVerify = SymbolTableGenerator()
+		symbolVerify.visitTree(tree)
+		val symbols = symbolVerify.getSymbolTable()
+		if(symbolVerify.errors != 0)
+		{
+			println("Had ${symbolVerify.errors} error${if (symbolVerify.errors == 1) "" else "s"}.")
 			return
 		}
-		val astPrint = ASTPrinter()
-		astPrint.visitTree(tree)
 
 	}
 }

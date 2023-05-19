@@ -1,3 +1,4 @@
+// This code should all parse and type fine.
 struct Vec {
     var x: int;
     var y: int;
@@ -6,6 +7,14 @@ struct Vec {
 class vehicle {
     var speed: int;
     var location: Vec;
+}
+
+class Wheel {
+    var tire: Int = 1;
+}
+
+class Engine {
+    var power: Int = 3600;
 }
 
 class car: vehicle {
@@ -21,16 +30,31 @@ class truck: (car, vehicle)
     }
 }
 
+enum letters {
+    A,
+    B,
+    C,
+    D,
+    E,
+}
+
 fun main(): void
 {
     // This is a comment test
     var x: Int = 50; // This is an EOL comment test
     var y: Int = 54;
+
+    array nolen: int;
+    array len_but_def: int[10];
+    array def_but_len: int = {1, 2, 3};
+    var mul_by_two: Function = lambda (x: int): int {return x * 2;}
+    goto labeltest;
     for(var i: Int = 0; i < 25; i++)
     {
         print(i);
     }
-    for(i = 0;)
+    labeltest:
+    for(var i: Int = 0;)
     {
         if(i >= 25)
         {
@@ -38,6 +62,8 @@ fun main(): void
         }
         i++;
     }
+    var casetest: int = 5;
+
     switch(casetest)
     {
         case 1:
@@ -81,9 +107,39 @@ fun main(): void
           print("Not less than 10");
         }
     }
+    var i: int = 0;
+    i += 5;
+    i -= 1;
+    i *= 2;
+    i /= 0.5;
+    i %= 2;
+    i **= 40;
+    i += 1;
+    i &= 1;
+    i >>= 1;
+    i <<= 2;
+    i |= 100;
+    i ^= 3;
+    i++;
+    i--;
+    --i;
+    ++i;
+
+    while(a == 0 && b == 0)
+    {
+        print(c);
+    }
+
     for(; i <= 25)
     {
         i++;
+    }
+
+    array collection: Int[3] = {1, 2, 3};
+
+    foreach(item : collection)
+    {
+        print(item);
     }
     while(x > 0)
     {
@@ -97,4 +153,126 @@ fun main(): void
     {
         return x + 1 ^ y + 2 ** 7;
     }
+    if(x != 3 && y > 48)
+    {
+        return x + 1;
+    }
+
+    if(--x == 3 || y > 48)
+    {
+        return x + 1;
+    }
+    if(x == 3 || y++ > 48)
+    {
+        var a: bool = !(x != 3)
+        var b: int = x - 2;
+        b = b / 2;
+        return x + 1 | 2 + 3 ^ 4 & 5 | 4;
+    }
+    var obj: Vehicle = Truck();
+    var character: char = '\n';
+    var im_a_normal_char: char = 'c';
+    var funni_prog: string = "hello world";
+    var ternary: int = 2 == 3 ? 3 : 4;
+    obj.vroom_vroom();
+    return ~x;
+    do
+    {
+        i++;
+        if(i == -1)
+        {
+            continue;
+        }
+        i -= -1;
+    } while(i > -80 && i < 80);
+    throw Unreachable(a, b, c);
+    return;
+
+    try {
+        print(1/0);
+    } catch(e: dividebyzero)
+    {
+        print(e);
+    }
+}
+// These lines should generate errors
+ fun thisisthebadplace(): void
+{   var \\\\\\;
+;;
+for( {
+   a = a = a = a = a = a = a = a = a
+}
+var 5 = x
+struct class X {
+
+}
+
+class class : class
+{
+
+}
+}
+
+fun class fun class fun struct fun fun struct fun var fun class fun struct enum
+
+fun warn_me(,,,,,,a: int b: int, c: int): int
+{
+
+}
+
+array theressomethingwrongicanfeelit: int[3.14];
+
+fun evil) a: muhahaha(: int
+{
+
+}
+
+fun lessevil(a: muhaha(: int
+{
+
+}
+
+
+class smileyinheritance :) {
+    var a = b;
+}
+
+class frownyinheritance : (a, b, c, d :( {
+    var a = b;
+}
+
+enum ninthamendment {}
+
+var x: Int = 5;
+
+enum floatmetothemoon {
+    A: 4.1,
+    G: 5.3,
+}
+
+enum disturbing {
+    A: 4,
+    B: "bee",
+    5: C,
+    E: 2.3821,
+    F:,
+    G
+}
+
+enum disturbing {
+    A: 4,
+    G: 5,
+}
+throw uh_oh;
+throw UH_OH(;
+while((a == 0) + (b == 0))
+{
+    print(c);
+}
+
+for(var x: int = 0; i + 2; i < 25)
+{
+    print(x);
+}
+
 }

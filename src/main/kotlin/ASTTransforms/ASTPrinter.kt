@@ -18,7 +18,7 @@ class ASTPrinter : Visitor {
 			}, returning ${node.return_type}"
 		)
 		print("Body -")
-		node.accept(this)
+		node.block.accept(this)
 		println("-- End --")
 	}
 
@@ -141,6 +141,16 @@ class ASTPrinter : Visitor {
 		println("-- End --")
 	}
 
+	override fun visit(node: Ternary) {
+		println("Line ${node.line} - Ternary --")
+		println("-- Conditional --")
+		node.condition.accept(this)
+		println("-- Consequent --")
+		node.consequent.accept(this)
+		println("-- Consequent --")
+		node.alternate.accept(this)
+		println("-- End --")
+	}
 	override fun visit(node: Continue) {
 		println("Line ${node.line} - Continue")
 	}

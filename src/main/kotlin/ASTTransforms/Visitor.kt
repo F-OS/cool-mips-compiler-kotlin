@@ -38,4 +38,6 @@ interface Visitor {
 	fun visit(node: ClassDeclaration)
 	fun visit(node: StructDeclaration)
 	fun visit(node: FunctionDeclaration)
+
+	fun visit(node: Ternary)
 }

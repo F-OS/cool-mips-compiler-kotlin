@@ -46,5 +46,6 @@ fun nodeToString(node: ASTRoot): String {
 		is UnaryOp -> "Unary Op"
 		is VariableAccess -> "Variable Access"
 		is StructDeclaration -> "Struct Declaration"
+		is Ternary -> "Ternary"
 	}
 }

@@ -15,6 +15,12 @@ class Lambda(val params: List<Pair<String, String>>, val block: Statement, var r
 	}
 }
 
+class Ternary(val condition: Expression, val consequent: Expression, val alternate: Expression, line: Int) :
+	Expression(line) {
+	override fun accept(visitor: Visitor) {
+		return visitor.visit(this)
+	}
+}
 enum class BinaryOps {
 	And,
 	Or,

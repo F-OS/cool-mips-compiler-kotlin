@@ -5,6 +5,23 @@ import Tokenizer.*
 
 class CodeParser(private val tokens: MutableList<Token>) {
 
+	private val reservedSyntax = listOf(
+		"if",
+		"while",
+		"for",
+		"foreach",
+		"do",
+		"class",
+		"struct",
+		"var",
+		"fun",
+		"enum",
+		"switch",
+		"else",
+		"throw",
+		"try",
+		"catch"
+	)
 	// Error messages
 	private val ERROR_IF_CONDITIONAL = "Error: Each if statement must contain a conditional enclosed in parentheses."
 
@@ -50,7 +67,7 @@ class CodeParser(private val tokens: MutableList<Token>) {
 
 	private val ERROR_SWITCH_BLOCK_END = "Error: Switch blocks end with right braces."
 
-	private val ERROR_MISSING_SEMICOLON = "Error: All statements must end with semicolons"
+	private val ERROR_MISSING_SEMICOLON = "Error: All statements must end with semicolons."
 
 	private val ERROR_ASSIGNMENT_MALFORMED = "Error: Assignment malformed."
 
@@ -193,6 +210,7 @@ class CodeParser(private val tokens: MutableList<Token>) {
 						"foreach",
 						"do",
 						"class",
+						"struct",
 						"var",
 						"fun",
 						"enum",
@@ -204,6 +222,10 @@ class CodeParser(private val tokens: MutableList<Token>) {
 					)
 					if (synchronizeTokens.any { it == ident }) {
 						return declsSoFar
+					}
+					else
+					{
+						tokens.removeFirst()
 					}
 				}
 
@@ -221,8 +243,13 @@ class CodeParser(private val tokens: MutableList<Token>) {
 	 * Can help to distinguish errors, for example, the user should be able to tell -
 	 * between an error in a for loop like a missing semicolon and an error in the loop conditional itself.
 	 */
-	private fun throwError(parserStage: parserStates? = null, errorMessage: String, line_or_not: Int? = null): Nothing {
+	private fun throwError(parserStage: parserStates? = null, message: String, line_or_not: Int? = null): Nothing {
 		val line: Int = line_or_not ?: tokens[0].line!!
+		var errorMessage = message
+		if(tokens[0] is Unimplemented)
+		{
+			errorMessage = "Unimplemented token - Unable to recognize ${(tokens[0] as Unimplemented).c}"
+		}
 		if (parserStage == null) {
 			throw ParserException("Line $line - $errorMessage")
 		}
@@ -254,7 +281,7 @@ class CodeParser(private val tokens: MutableList<Token>) {
 			val line = tokens.getOrNull(0)!!.line
 			val tokenString = tokToString(tokens.getOrNull(0)!!)
 			val expectedTokensString = expectedToken.joinToString(" or ") { tokToString(it) }
-			val error = "Line $line - $errorMessage Got $tokenString, expected $expectedTokensString."
+			val error = "$errorMessage Got $tokenString, expected $expectedTokensString."
 			throwError(parserStage, error, line)
 		}
 		if (tokens.getOrNull(0)!! is Semicolon) {
@@ -277,12 +304,12 @@ class CodeParser(private val tokens: MutableList<Token>) {
 		line: Int
 	) {
 		if (tokens.isEmpty()) {
-			throwError(errorMessage = ERROR_EOF)
+			throwError(message = ERROR_EOF)
 		}
 		if (expectedIdent.none { it == ident }) {
 			val expectedIdentString = expectedIdent.joinToString(" or ") { it }
 			val error = "$errorMessage Got '$ident', expected $expectedIdentString."
-			throwError(errorMessage = error, line_or_not = line)
+			throwError(message = error, line_or_not = line)
 		}
 	}
 
@@ -335,11 +362,18 @@ class CodeParser(private val tokens: MutableList<Token>) {
 	private fun expectIdentifierToken(variableType: String, statementType: String): String {
 		if (tokens[0] !is Ident) {
 			throwError(
-				errorMessage = "Error, missing an identifier in a $statementType. Got '${(tokens[0])}', expecting identifier for $variableType.",
+				message = "Error: missing an identifier in a $statementType. Got '${(tokToString(tokens[0]))}', expecting identifier for $variableType.",
 				line_or_not = tokens[0].line
 			)
 		}
 		val identifier = tokens[0] as Ident
+		if(reservedSyntax.any {(tokens[0] as Ident).ident == it})
+		{
+			throwError(
+				message = "Error: reserved token in $statementType. Got '${(tokens[0] as Ident).ident}', which cannot be used for $variableType.",
+				line_or_not = tokens[0].line
+			)
+		}
 		tokens.removeFirst()
 		return identifier.ident
 	}
@@ -375,11 +409,13 @@ class CodeParser(private val tokens: MutableList<Token>) {
 	 * * * "lambda" LambdaBody
 	 */
 	private fun parseLambda(): Expression {
-		return if (tokens.firstOrNull() is Ident && (tokens.firstOrNull() as Ident).ident == "lambda") {
+		if (tokens.firstOrNull() is Ident && (tokens.firstOrNull() as Ident).ident == "lambda") {
 			tokens.removeFirst()
-			parseLambdaBody()
+			val lambda = parseLambdaBody()
+			semicolon_exempt = true
+			return lambda
 		} else {
-			parseBinaryOpExpression(0)
+			return parseTernary()
 		}
 	}
 
@@ -402,6 +438,20 @@ class CodeParser(private val tokens: MutableList<Token>) {
 		val type = expectIdentifierToken("a return type", "lambda statement")
 		val block = parseBlock()
 		return Lambda(params, block, type, line)
+	}
+
+	private fun parseTernary(): Expression {
+		val line = tokens[0].line!!
+		val lhs = parseBinaryOpExpression(0)
+		if(tokens[0] is QMark)
+		{
+			tokens.removeFirst()
+			val consequent = parseBinaryOpExpression(0)
+			expectToken(listOf(Colon()), "Expected colon in ternary expression.", parserStates.PARSER_EXPRESSION_STAGE)
+			val alternate = parseBinaryOpExpression(0)
+			return Ternary(lhs, consequent, alternate, line)
+		}
+		return lhs
 	}
 
 	/**
@@ -640,6 +690,7 @@ class CodeParser(private val tokens: MutableList<Token>) {
 			tokens.removeFirst()
 			return when {
 				tokens[0] is LBracket -> {
+					tokens.removeFirst()
 					val idx = parseExpression()
 					expectToken(
 						listOf(RBracket()),
@@ -650,6 +701,7 @@ class CodeParser(private val tokens: MutableList<Token>) {
 				}
 
 				tokens[0] is Dot -> {
+					tokens.removeFirst()
 					val rhs = parseExpression()
 					expectNode(
 						rhs,
@@ -913,6 +965,28 @@ class CodeParser(private val tokens: MutableList<Token>) {
 		val line = expectToken(listOf(LParen()), ERROR_IF_CONDITIONAL, parserStates.PARSER_STATEMENT_STAGE).line!!
 
 		val conditional: Expression = parseExpression()
+		if(conditional::class == BinaryOp::class)
+		{
+			val op = (conditional as BinaryOp).op
+			when(op)
+			{
+				BinaryOps.LessThan, BinaryOps.LessEqual, BinaryOps.EqualTo, BinaryOps.GreaterEqual, BinaryOps.NotEqualTo, BinaryOps.GreaterThan, BinaryOps.And, BinaryOps.Or ->
+				{
+					// Good.
+				}
+				else ->
+				{
+					throwError(parserStates.PARSER_STATEMENT_STAGE,"Invalid conditional.")
+				}
+			}
+		}
+		else if(conditional::class == Bool::class)
+		{
+			// Good.
+		}
+		else {
+			throwError(parserStates.PARSER_STATEMENT_STAGE, "Invalid conditional.")
+		}
 
 		expectToken(listOf(RParen()), ERROR_IF_CONDITIONAL, parserStates.PARSER_STATEMENT_STAGE)
 
@@ -989,12 +1063,34 @@ class CodeParser(private val tokens: MutableList<Token>) {
 			} else {
 				semicolon_exempt = true
 				conditional = parseDeclaration()
-				expectNode(
+				val expr = (expectNode(
 					conditional,
 					listOf(ExprStatement(line = line)),
 					ERROR_INVALID_CONDITIONAL,
 					parserStates.PARSER_STATEMENT_STAGE
-				)
+				) as ExprStatement).expr!!
+				if(expr::class == BinaryOp::class)
+				{
+					val op = (expr as BinaryOp).op
+					when(op)
+					{
+						BinaryOps.LessThan, BinaryOps.LessEqual, BinaryOps.EqualTo, BinaryOps.GreaterEqual, BinaryOps.NotEqualTo, BinaryOps.GreaterThan, BinaryOps.And, BinaryOps.Or->
+						{
+							// Good.
+						}
+						else ->
+						{
+							throwError(parserStates.PARSER_STATEMENT_STAGE,"Invalid conditional.")
+						}
+					}
+				}
+				else if(expr::class == Bool::class)
+				{
+					// Good.
+				}
+				else {
+					throwError(parserStates.PARSER_STATEMENT_STAGE, "Invalid conditional.")
+				}
 			}
 		}
 		if (tokens.getOrNull(0) !is RParen) {
@@ -1052,7 +1148,28 @@ class CodeParser(private val tokens: MutableList<Token>) {
 		val line = expectToken(listOf(LParen()), ERROR_WHILE_CONDITIONAL, parserStates.PARSER_STATEMENT_STAGE).line!!
 
 		val conditional: Expression = parseExpression()
-
+		if(conditional::class == BinaryOp::class)
+		{
+			val op = (conditional as BinaryOp).op
+			when(op)
+			{
+				BinaryOps.LessThan, BinaryOps.LessEqual, BinaryOps.EqualTo, BinaryOps.GreaterEqual, BinaryOps.NotEqualTo, BinaryOps.GreaterThan, BinaryOps.And, BinaryOps.Or ->
+				{
+					// Good.
+				}
+				else ->
+				{
+					throwError(parserStates.PARSER_STATEMENT_STAGE,"Invalid conditional.")
+				}
+			}
+		}
+		else if(conditional::class == Bool::class)
+		{
+			// Good.
+		}
+		else {
+			throwError(parserStates.PARSER_STATEMENT_STAGE, "Invalid conditional.")
+		}
 		expectToken(listOf(RParen()), ERROR_WHILE_UNCLOSED_PARENTHESIS, parserStates.PARSER_STATEMENT_STAGE)
 
 		return While(conditional, parseBlock(), line)
@@ -1076,10 +1193,32 @@ class CodeParser(private val tokens: MutableList<Token>) {
 			ERROR_DO_LOOP_TERMINATION,
 			line
 		)
-
+		tokens.removeFirst()
 		expectToken(listOf(LParen()), ERROR_WHILE_CONDITIONAL, parserStates.PARSER_STATEMENT_STAGE)
 
 		val conditional: Expression = parseExpression()
+		if(conditional::class == BinaryOp::class)
+		{
+			val op = (conditional as BinaryOp).op
+			when(op)
+			{
+				BinaryOps.LessThan, BinaryOps.LessEqual, BinaryOps.EqualTo, BinaryOps.GreaterEqual, BinaryOps.NotEqualTo, BinaryOps.GreaterThan, BinaryOps.And, BinaryOps.Or ->
+				{
+					// Good.
+				}
+				else ->
+				{
+					throwError(parserStates.PARSER_STATEMENT_STAGE,"Invalid conditional.")
+				}
+			}
+		}
+		else if(conditional::class == Bool::class)
+		{
+			// Good.
+		}
+		else {
+			throwError(parserStates.PARSER_STATEMENT_STAGE, "Invalid conditional.")
+		}
 
 		expectToken(listOf(RParen()), ERROR_WHILE_UNCLOSED_PARENTHESIS, parserStates.PARSER_STATEMENT_STAGE)
 
@@ -1565,7 +1704,7 @@ class CodeParser(private val tokens: MutableList<Token>) {
 
 			when (nextToken) {
 				is Ident -> {
-					val paramName = expectIdentifierToken("an enum parameter name", "enum declaration")
+					val paramName = (nextToken as Ident).ident
 
 					val tokenAfterName = expectToken(
 						listOf(Colon(), Comma()),
@@ -1586,11 +1725,13 @@ class CodeParser(private val tokens: MutableList<Token>) {
 							}
 
 							val num = numVal.int
+							reserved += paramName
 							enumEntries.add(Pair(paramName, num))
 							enumNumber = num
 						}
 
 						is Comma -> {
+							reserved += paramName
 							enumEntries.add(Pair(paramName, enumNumber))
 							enumNumber++
 						}
@@ -1603,7 +1744,6 @@ class CodeParser(private val tokens: MutableList<Token>) {
 					if (enumEntries.isEmpty()) {
 						println("WARNING: Empty enum definition at line ${tokens[0].line}.")
 					}
-					tokens.removeFirst()
 					break
 				}
 
@@ -1723,7 +1863,13 @@ class CodeParser(private val tokens: MutableList<Token>) {
 	 */
 	private fun parseFunDeclaration(): Declaration {
 		val line = tokens[0].line!!
-		val name = expectIdentifierToken("a function name", "function definition")
+		var name = expectIdentifierToken("a function name", "function definition")
+		// Hacky fix.
+		if(name == "fun")
+		{
+			println("WARNING: either you are trying to define a function named fun or the parser was unable to synchronize properly. In either case stop it.")
+			var name = expectIdentifierToken("a function name", "function definition")
+		}
 		val params = parseFunctionParams()
 		expectToken(
 			listOf(Colon()),
@@ -1801,5 +1947,9 @@ class CodeParser(private val tokens: MutableList<Token>) {
 			}
 		}
 		return params
+	}
+
+	fun hasTokens(): Boolean {
+		return tokens.isNotEmpty() && tokens[0] !is EndOfFile
 	}
 }
