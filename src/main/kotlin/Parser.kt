@@ -4,7 +4,7 @@ import ParserExcptions.ExpressionParserException
 import ParserExcptions.StatementParserException
 
 class Parser(private val tokens: MutableList<Token>) {
-	private fun isAssignment(token: Token): Boolean {
+	private inline fun isAssignment(token: Token): Boolean {
 		return token is Assign || token is AddAssign || token is SubAssign ||
 				token is MulAssign || token is DivAssign || token is ModAssign ||
 				token is PowAssign || token is AndAssign || token is OrAssign ||
@@ -82,6 +82,15 @@ class Parser(private val tokens: MutableList<Token>) {
 				2 -> throw DeclarationParserException(error)
 			}
 		}
+	}
+
+	private fun expectIdentifierToken(variableType: String, statementType: String): String {
+		if (tokens[0] !is Ident) {
+			throw StatementParserException("Line ${tokens[0].line} - Error, missing an identifier in a $statementType. Got '${(tokens[0])}', expecting identifier for $variableType.")
+		}
+		val identifier = tokens[0] as Ident
+		tokens.removeFirst()
+		return identifier.ident
 	}
 
 	/*
@@ -627,7 +636,11 @@ class Parser(private val tokens: MutableList<Token>) {
 				}
 
 				else -> {
-					if (isAssignment(tokens[1])) {
+					if (tokens[1] is LBracket) {
+						parseArrayAssignment()
+					} else if (tokens[1] is Dot) {
+						parseScopedAssignment()
+					} else if (isAssignment(tokens[1])) {
 						parseAssignment()
 					} else if (tokens[1] is Colon) {
 						parseLabel()
@@ -650,6 +663,7 @@ class Parser(private val tokens: MutableList<Token>) {
 		)
 		return statement
 	}
+
 
 	private fun parseIf(): Statement {
 		var line = tokens[0].line!!
@@ -706,61 +720,38 @@ class Parser(private val tokens: MutableList<Token>) {
 		var initializer: Declaration? = null
 		var conditional: Expression? = null
 		var iteration: Statement? = null
-		expectToken(
-			0,
-			listOf(LParen()),
-			"Error, for loops must be followed by control structure.",
-			1
-		)
-		if (tokens[0] !is Semicolon) {
+
+		expectToken(0, listOf(LParen()), "Error, for loops must be followed by control structure.", 1)
+
+		if (tokens[0] !is Semicolon && tokens[0] !is Comma) {
 			initializer = parseDeclaration()
 			expectToken(
 				0,
 				listOf(Semicolon(), Comma(), RParen()),
-				"Error, unexpected token.",
+				"Error, unexpected token after declaration in for loop body.",
 				1
 			)
-			if (tokens[0] is Semicolon || tokens[0] is Comma) {
-				tokens.removeFirst()
-			} else if (tokens[0] is RParen) {
-				tokens.removeFirst()
-				val block = parseBlock()
-				return For(initializer, null, null, block, line)
-			}
 		}
-		if (tokens[0] !is Semicolon) {
+		if (tokens[0] !is Semicolon && tokens[0] !is Comma) {
 			conditional = parseExpression()
 			expectToken(
 				0,
 				listOf(Semicolon(), Comma(), RParen()),
-				"Error, unexpected token.",
+				"Error, unexpected token after conditional in for loop body.",
 				1
 			)
-			if (tokens[0] is Semicolon || tokens[0] is Comma) {
-				tokens.removeFirst()
-			} else if (tokens[0] is RParen) {
-				tokens.removeFirst()
-				val block = parseBlock()
-				return For(initializer, conditional, null, block, line)
-			}
 		}
-		if (tokens[0] !is Semicolon) {
+		if (tokens[0] !is Semicolon && tokens[0] !is Comma) {
 			iteration = parseStatement()
 			expectToken(
 				0,
 				listOf(Semicolon(), Comma(), RParen()),
-				"Error, unexpected token.",
+				"Error, unexpected token after iterator in for loop body.",
 				1
 			)
-			if (tokens[0] is Semicolon || tokens[0] is Comma) {
-				tokens.removeFirst()
-			} else if (tokens[0] is RParen) {
-				tokens.removeFirst()
-				val block = parseBlock()
-				return For(initializer, conditional, iteration, block, line)
-			}
 		}
-		return For(initializer, conditional, iteration, parseBlock(), line)
+		val block = parseBlock()
+		return For(initializer, conditional, iteration, block, line)
 	}
 
 	private fun parseForEachLoop(): Statement {
@@ -771,7 +762,7 @@ class Parser(private val tokens: MutableList<Token>) {
 			"Error, foreach loops must be followed by control structure.",
 			1
 		)
-		val itervar = expectIdentifierToken("iteration")
+		val itervar = expectIdentifierToken("an iteration variable", "foreach")
 		expectToken(
 			0,
 			listOf(Colon()),
@@ -779,7 +770,7 @@ class Parser(private val tokens: MutableList<Token>) {
 			1
 		)
 
-		val collectionvar = expectIdentifierToken("collection")
+		val collectionvar = expectIdentifierToken("a collection variable", "foreach")
 		expectToken(
 			0,
 			listOf(RParen()),
@@ -787,170 +778,242 @@ class Parser(private val tokens: MutableList<Token>) {
 			1
 		)
 
-		return ForEach(itervar.ident, collectionvar.ident, parseBlock(), line)
-	}
-
-	private fun expectIdentifierToken(variableType: String): Ident {
-		if (tokens[0] !is Ident) {
-			throw StatementParserException("Line ${tokens[0].line} - Error, foreach loops consist of an iteration variable, a colon ':', and a collection variable. Got '${(tokens[0])}', expecting identifier for $variableType.")
-		}
-		val identifier = tokens[0] as Ident
-		tokens.removeFirst()
-		return identifier
+		return ForEach(itervar, collectionvar, parseBlock(), line)
 	}
 
 	private fun parseWhile(): Statement {
-		if (tokens[0] !is LParen) {
-			throw StatementParserException("Line ${tokens[0].line} - Error, while loops must be followed by control structure. Got '${(tokens[0])}', expecting left paren '('.")
-		}
-		tokens.removeFirst()
+		val line = tokens[0].line!!
+		expectToken(0, listOf(LParen()), "Error, while loops must be followed by a conditional in parenthesis.", 1)
+
 		val conditional: Expression = parseExpression()
-		if (tokens[0] !is RParen) {
-			throw StatementParserException("Line ${tokens[0].line} - Error, while loops must be followed by control structure. Got '${(tokens[0])}', expecting right paren ')'.")
-		}
-		tokens.removeFirst()
-		return While(conditional, parseBlock())
+
+		expectToken(0, listOf(RParen()), "Error, unclosed parenthesis in while loop conditional.", 1)
+
+		return While(conditional, parseBlock(), line)
 	}
 
 	private fun parseDo(): Statement {
+		val line = tokens[0].line!!
+
 		val body = parseBlock()
-		if (!(tokens[0] is Ident && (tokens[0] as Ident).ident == "while")) {
-			throw StatementParserException("Line ${tokens[0].line} - Error, do loops must be followed by while block and control structure. Got '${(tokens[0])}', expecting left paren '('.")
-		}
-		tokens.removeFirst()
-		if (tokens[0] !is LParen) {
-			throw StatementParserException("Line ${tokens[0].line} - Error, do loops must be followed by control structure. Got '${(tokens[0])}', expecting left paren '('.")
-		}
-		tokens.removeFirst()
+
+		expectIdent(
+			(tokens[0] as Ident).ident,
+			listOf("while"),
+			"Error, do loops must be followed by a 'while' block and control structure.",
+			1,
+			line
+		)
+
+		expectToken(0, listOf(LParen()), "Error, while blocks must have their condition in parenthesis.", 1)
+
 		val conditional: Expression = parseExpression()
-		if (tokens[0] !is RParen) {
-			throw StatementParserException("Line ${tokens[0].line} - Error, do loops must be followed by control structure. Got '${(tokens[0])}', expecting right paren ')'.")
-		}
-		tokens.removeFirst()
-		return DoWhile(conditional, body)
+
+		expectToken(0, listOf(RParen()), "Error, unclosed parenthesis in while loop conditional.", 1)
+
+		return DoWhile(conditional, body, line)
 	}
 
 	private fun parseSwitch(): Statement {
-		if (tokens[0] !is LParen) {
-			throw StatementParserException("Line ${tokens[0].line} - Error, switch statements must be followed by the expression to switch on. Got '${(tokens[0])}', expecting left paren '('.")
-		}
-		tokens.removeFirst()
+		val line = tokens[0].line!!
+		expectToken(0, listOf(LParen()), "Error, switch statements must be followed by the expression to switch on.", 1)
+
 		val conditional: Expression = parseExpression()
-		if (tokens[0] !is RParen) {
-			throw StatementParserException("Line ${tokens[0].line} - Error, switch statements must be followed by the expression to switch on. Got '${(tokens[0])}', expecting right paren ')'.")
-		}
-		tokens.removeFirst()
-		if (tokens[0] !is LBrace) {
-			throw StatementParserException("Line ${tokens[0].line} - Error, switch statements must be followed by a switch block. Got '${(tokens[0])}', expecting right paren '{'.")
-		}
-		tokens.removeFirst()
+
+		expectToken(0, listOf(RParen()), "Error, unclosed expression in switch block.", 1)
+
+		expectToken(0, listOf(LBrace()), "Error, switch statements must be followed by a switch block.", 1)
+
 		val cases = mutableListOf<Pair<Expression, Statement>>()
 		while (true) {
-			if (!(tokens[0] is Ident && (tokens[0] as Ident).ident == "case")) {
-				throw StatementParserException("Line ${tokens[0].line} - Error, case blocks consist of the keyword 'case' followed by an expression, a colon, and a code block. Got '${(tokens[0])}', expecting 'case'.")
-			}
+			expectIdent(
+				tokens[0].toString(),
+				listOf("case"),
+				"Error, case blocks consist of the keyword 'case' followed by an expression, a colon, and a code block.",
+				1,
+				tokens[0].line!!
+			)
 			tokens.removeFirst()
+
 			val exp: Expression = parseExpression()
-			if (tokens[0] !is Colon) {
-				throw StatementParserException("Line ${tokens[0].line} - Error, case expression must be followed by a colon. Got '${(tokens[0])}', expecting colon ':'.")
-			}
-			tokens.removeFirst()
+
+			expectToken(0, listOf(Colon()), "Error, case expression must be followed by a colon.", 1)
+
 			val block: Statement = parseBlock()
 			cases.add(Pair(exp, block))
 			if (tokens[0] is RBrace) {
-				tokens.removeFirst()
 				break
 			}
-			if (tokens[0] is EndOfFile) {
-				throw StatementParserException("Line ${tokens[0].line} - Error, unterminated switch block. Did you forget a closing brace?")
-			}
+			rejectToken(0, listOf(EndOfFile()), "Error, unterminated switch block. Did you forget a closing brace?", 1)
 		}
-		return Switch(conditional, cases)
+		return Switch(conditional, cases, line)
 	}
 
 	private fun parseLabel(): Statement {
-		if (tokens[0] !is Ident) {
-			throw StatementParserException("Line ${tokens[0].line} - Error, invalid label. Got '${(tokens[0])}', expecting an identifier.")
-		}
-		val label = (tokens[0] as Ident).ident
-		tokens.removeFirst()
-		if (tokens[0] !is Colon) {
-			throw StatementParserException("Line ${tokens[0].line} - Error, invalid label. Got '${(tokens[0])}' after '${label}', expecting a colon to end the label.")
-		}
-		tokens.removeFirst()
-		return Label(label)
+		val line = tokens[0].line!!
+		val label =
+			(expectToken(0, listOf(Ident()), "Error, invalid label. Expecting an identifier.", 1) as Ident).ident
+		expectToken(0, listOf(Colon()), "Error, invalid label. Expecting a colon to end the label.", 1)
+		return Label(label, line)
+	}
+
+	private fun parseArrayAssignment(): Statement {
+		TODO()
+	}
+
+	private fun parseScopedAssignment(): Statement {
+		TODO()
 	}
 
 	private fun parseAssignment(): Statement {
-		if (tokens[0] !is Ident) {
-			throw StatementParserException("Line ${tokens[0].line} - Error, invalid assignment identifier. Got '${(tokens[0])}', expecting an identifier.")
-		}
-		val variable = (tokens[0] as Ident).ident
+		val line = tokens[0].line!!
+		val variable = (expectToken(
+			0,
+			listOf(Ident()),
+			"Error, invalid assignment identifier. Expecting an identifier.",
+			1
+		) as Ident).ident
+		val tok = tokens[0];
 		tokens.removeFirst()
-		if (tokens[0] !is Assign) {
-			throw StatementParserException("Line ${tokens[0].line} - Error, assignments require equals. Got '${(tokens[0])}', expecting an assignment sign '='.")
+		if (isAssignment(tok) && tok !is Assign) {
+			when (tok) {
+				is AddAssign -> return Assignment(
+					variable,
+					BinaryOp(VariableAccess(variable, line), BinaryOps.Add, parseExpression(), line),
+					line
+				)
 
+				is SubAssign -> return Assignment(
+					variable,
+					BinaryOp(VariableAccess(variable, line), BinaryOps.Sub, parseExpression(), line),
+					line
+				)
+
+				is MulAssign -> return Assignment(
+					variable,
+					BinaryOp(VariableAccess(variable, line), BinaryOps.Mul, parseExpression(), line),
+					line
+				)
+
+				is DivAssign -> return Assignment(
+					variable,
+					BinaryOp(VariableAccess(variable, line), BinaryOps.Div, parseExpression(), line),
+					line
+				)
+
+				is ModAssign -> return Assignment(
+					variable,
+					BinaryOp(VariableAccess(variable, line), BinaryOps.Mod, parseExpression(), line),
+					line
+				)
+
+				is PowAssign -> return Assignment(
+					variable,
+					BinaryOp(VariableAccess(variable, line), BinaryOps.Pow, parseExpression(), line),
+					line
+				)
+
+				is AndAssign -> return Assignment(
+					variable,
+					BinaryOp(VariableAccess(variable, line), BinaryOps.Bitwise_And, parseExpression(), line),
+					line
+				)
+
+				is OrAssign -> return Assignment(
+					variable,
+					BinaryOp(VariableAccess(variable, line), BinaryOps.Bitwise_Or, parseExpression(), line),
+					line
+				)
+
+				is XorAssign -> return Assignment(
+					variable,
+					BinaryOp(VariableAccess(variable, line), BinaryOps.Bitwise_Xor, parseExpression(), line),
+					line
+				)
+
+				is LShiftAssign -> return Assignment(
+					variable,
+					BinaryOp(VariableAccess(variable, line), BinaryOps.Bitwise_LShift, parseExpression(), line),
+					line
+				)
+
+				is RShiftAssign -> return Assignment(
+					variable,
+					BinaryOp(VariableAccess(variable, line), BinaryOps.Bitwise_RShift, parseExpression(), line),
+					line
+				)
+
+				else -> {
+					throw StatementParserException("isAssignment is malformed")
+				}
+			}
 		}
-		tokens.removeFirst()
-		return Assignment(variable, parseExpression())
+		return Assignment(variable, parseExpression(), line)
 	}
 
 	private fun parseReturn(): Statement {
+		val line = tokens[0].line!!
 		return if (tokens[0] is Semicolon) {
-			Return(null)
+			Return(null, line)
 		} else {
-			Return(parseExpression())
+			Return(parseExpression(), line)
 		}
 	}
 
 	private fun parseGoto(): Statement {
-		if (tokens[0] !is Ident) {
-			throw StatementParserException("Line ${tokens[0].line} - Error, invalid label. Got '${(tokens[0])}', expecting an identifier.")
-		}
-		return Goto((tokens[0] as Ident).ident)
+		val line = tokens[0].line!!
+		val label = (expectToken(
+			0,
+			listOf(Ident()),
+			"Error, invalid label for goto. Expecting an identifier.",
+			1
+		) as Ident).ident
+		return Goto(label, line)
 	}
 
 	private fun parseTry(): Statement {
 		val block = parseBlock()
-		if (!(tokens[0] is Ident && (tokens[0] as Ident).ident == "catch")) {
-			throw StatementParserException("Line ${tokens[0].line} - Error, try blocks consist of a code block followed by a 'catch' statement and a parenthetical. Got '${(tokens[0])}', expecting 'catch'.")
-		}
+		expectIdent(
+			(tokens[0] as Ident).ident,
+			listOf("catch"),
+			"Error, try blocks consist of a code block followed by a 'catch' statement and a parenthetical.",
+			1,
+			tokens[0].line!!
+		)
 		tokens.removeFirst()
-		if (tokens[0] !is LParen) {
-			throw StatementParserException("Line ${tokens[0].line} - Error, catch statements must be followed by a parenthetical. Got '${(tokens[0])}', expecting left paren '('.")
-		}
-		tokens.removeFirst()
-		if (tokens[0] !is Ident) {
-			throw StatementParserException("Line ${tokens[0].line} - Error, catch expression parenthetical must have variable name. Got '${(tokens[0])}', expecting variable name.")
-		}
-		val catches = (tokens[0] as Ident).ident
-		tokens.removeFirst()
-		if (tokens[0] !is Colon) {
-			throw StatementParserException("Line ${tokens[0].line} - Error, catch variable must be typed. Got '${(tokens[0])}', expecting colon ':'.")
-		}
-		tokens.removeFirst()
-		if (tokens[0] !is Ident) {
-			throw StatementParserException("Line ${tokens[0].line} - Error, catch expression parenthetical must have variable type. Got '${(tokens[0])}', expecting variable type.")
-		}
-		val catchesAs = (tokens[0] as Ident).ident
-		tokens.removeFirst()
-		if (tokens[0] !is RParen) {
-			throw StatementParserException("Line ${tokens[0].line} - Error, catch statements must be terminated. Got '${(tokens[0])}', expecting left paren ')'.")
-		}
+		expectToken(
+			0,
+			listOf(LParen()),
+			"Error, catch statements must be followed by a parenthetical.",
+			1
+		)
+		val line = tokens[0].line!!
+		val catches = expectIdentifierToken("an exception variable", "catch block")
+		expectToken(
+			0,
+			listOf(Colon()),
+			"Error, catch variable must be typed.",
+			1
+		)
+		val catchesAs = expectIdentifierToken("a type", "catch block")
+		expectToken(
+			0,
+			listOf(RParen()),
+			"Error, catch statements must be terminated.",
+			1
+		)
 		val catch = parseBlock()
-		return Try(block, catches, catchesAs, catch)
+		return Try(block, catches, catchesAs, catch, line)
 	}
 
 	private fun parseThrow(): Statement {
-		if (tokens[0] !is Ident) {
-			throw StatementParserException("Line ${tokens[0].line} - Error, throw expression must have exception name. Got '${(tokens[0])}', expecting exception name.")
-		}
-		val throws = (tokens[0] as Ident).ident
-		tokens.removeFirst()
-		if (tokens[0] !is LParen) {
-			throw StatementParserException("Line ${tokens[0].line} - Error, throw expression must have arguments in parenthesies. Got '${(tokens[0])}', expecting left paren.")
-		}
-		tokens.removeFirst()
+		val throws = expectIdentifierToken("an exception", "throw expression")
+		expectToken(
+			0,
+			listOf(LParen()),
+			"Error, throw expression must have arguments in parentheses.",
+			1
+		)
 		val params = mutableListOf<Expression>()
 
 		while (true) {
@@ -968,11 +1031,11 @@ class Parser(private val tokens: MutableList<Token>) {
 				else -> params.add(parseExpression())
 			}
 		}
-		return Throw(throws, params)
+		return Throw(throws, params, tokens[0].line!!)
 	}
 
 	private fun parseExpressionStatement(): Statement {
-		return ExprStatement(parseExpression())
+		return ExprStatement(parseExpression(), tokens[0].line!!)
 	}
 	/*
 		DECLARATIONS
