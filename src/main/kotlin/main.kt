@@ -1,3 +1,4 @@
+import ParserExcptions.ParserException
 import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.Paths
@@ -24,7 +25,7 @@ fun runPrompt() {
     while (true)
     {
         print("> ")
-        val line: String? = readLine();
+        val line: String? = readLine()
         if (line != null && line != "") {
             runcode(line)
         }
@@ -46,8 +47,14 @@ fun runFile(path: String)
 }
 
 fun runcode(lines: String) {
-    var tokens: List<Token> = scanToken(lines)
+    val tokens: List<Token> = scanToken(lines)
     println(tokens)
-    var parser: Parser = Parser(tokens as MutableList<Token>)
-    var tree = parser.parseExpression()
+    val parser: Parser = Parser(tokens as MutableList<Token>)
+    try {
+        val tree = parser.parseDeclaration()
+        println(tree)
+    } catch(p: ParserException)
+    {
+        println(p.s)
+    }
 }

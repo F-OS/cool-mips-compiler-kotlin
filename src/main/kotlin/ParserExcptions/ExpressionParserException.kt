@@ -1,5 +1,10 @@
 package ParserExcptions
 
-class ExpressionParserException(s: String) : Throwable() {
+sealed class ParserException(var s: String) : Throwable()
+class ExpressionParserException(s: String) : ParserException(s) {
+
+}
+
+class StatementParserException(s: String) : ParserException(s) {
 
 }

@@ -1,6 +1,6 @@
-sealed class Token(open val line:Int)
+sealed class Token(open val line: Int)
 
-class EndOfFile(override val line:Int) : Token(line)
+class EndOfFile(override val line: Int) : Token(line)
 
 data class Unimplemented(val c: Char, override val line: Int) : Token(line)
 
@@ -8,9 +8,9 @@ data class Num(val is_int: Boolean, val int: Long, val dbl: Double, override val
 
 data class Ident(val ident: String, override val line: Int) : Token(line)
 
-data class String_(val str: String, override val line: Int) : Token(line)
+data class StringTok(val str: String, override val line: Int) : Token(line)
 
-data class Char_(val c: Char, override val line: Int) : Token(line)
+data class CharTok(val c: Char, override val line: Int) : Token(line)
 
 
 class LParen(override val line: Int) : Token(line)
