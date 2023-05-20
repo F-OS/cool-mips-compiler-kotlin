@@ -461,89 +461,94 @@ class Parser(private val tokens: MutableList<Token>) {
 
 	private fun parseStatement(): Statement {
 		val statement = if (tokens[0] is Ident) {
-			if ((tokens[0] as Ident).ident == "if") {
-				tokens.removeFirst()
-				return parseIf()
-			}
-			when {
-				(tokens[0] as Ident).ident == "for" -> {
+			when ((tokens[0] as Ident).ident) {
+				"if" -> {
 					tokens.removeFirst()
-					return parseForLoop()
+					parseIf()
 				}
 
-				(tokens[0] as Ident).ident == "foreach" -> {
+				"for" -> {
 					tokens.removeFirst()
-					return parseForEachLoop()
+					parseForLoop()
 				}
 
-				(tokens[0] as Ident).ident == "while" -> {
+				"foreach" -> {
 					tokens.removeFirst()
-					return parseWhile()
+					parseForEachLoop()
 				}
 
-				(tokens[0] as Ident).ident == "do" -> {
+				"while" -> {
 					tokens.removeFirst()
-					return parseDo()
+					parseWhile()
 				}
 
-				(tokens[0] as Ident).ident == "continue" -> {
+				"do" -> {
+					tokens.removeFirst()
+					parseDo()
+				}
+
+				"continue" -> {
 					tokens.removeFirst()
 					Continue()
 				}
 
-				(tokens[0] as Ident).ident == "break" -> {
+				"break" -> {
 					tokens.removeFirst()
 					Break()
 				}
 
-				(tokens[0] as Ident).ident == "switch" -> {
+				"switch" -> {
 					tokens.removeFirst()
-					return parseSwitch()
+					parseSwitch()
 				}
 
-				tokens[1] is Assign || tokens[1] is AddAssign || tokens[1] is SubAssign || tokens[1] is MulAssign || tokens[1] is DivAssign || tokens[1] is ModAssign || tokens[1] is PowAssign || tokens[1] is AndAssign || tokens[1] is OrAssign || tokens[1] is LShiftAssign || tokens[1] is RShiftAssign -> {
-					parseAssignment()
-				}
-
-				(tokens[0] as Ident).ident == "return" -> {
+				"return" -> {
 					tokens.removeFirst()
 					parseReturn()
 				}
 
-				(tokens[0] as Ident).ident == "goto" -> {
+				"goto" -> {
 					tokens.removeFirst()
 					parseGoto()
 				}
 
-				(tokens[0] as Ident).ident == "try" -> {
+				"try" -> {
 					tokens.removeFirst()
-					return parseTry()
+					parseTry()
 				}
 
-				(tokens[0] as Ident).ident == "throw" -> {
+				"throw" -> {
 					tokens.removeFirst()
 					parseThrow()
 				}
 
-				tokens[1] is Colon -> {
-					return parseLabel()
-				}
-
 				else -> {
-					parseExpressionStatement()
+					if (tokens[1] is Assign || tokens[1] is AddAssign || tokens[1] is SubAssign ||
+						tokens[1] is MulAssign || tokens[1] is DivAssign || tokens[1] is ModAssign ||
+						tokens[1] is PowAssign || tokens[1] is AndAssign || tokens[1] is OrAssign ||
+						tokens[1] is LShiftAssign || tokens[1] is RShiftAssign || tokens[1] is XorAssign
+					) {
+						parseAssignment()
+					} else if (tokens[1] is Colon) {
+						parseLabel()
+					} else {
+						parseExpressionStatement()
+					}
 				}
 			}
 		} else if (tokens[0] is LBrace) {
-			return parseBlock()
+			parseBlock()
 		} else {
 			parseExpressionStatement()
 		}
+
 		if (tokens[0] !is Semicolon) {
 			throw StatementParserException("Line ${tokens[0].line} - Error, all statements must end with semicolons. Got '${(tokens[0])}', expecting semicolon ';'.")
 		}
 		tokens.removeFirst()
 		return statement
 	}
+
 
 	private fun parseIf(): Statement {
 		if (tokens[0] !is LParen) {
