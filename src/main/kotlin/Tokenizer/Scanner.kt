@@ -1,3 +1,5 @@
+package Tokenizer
+
 val escapeSequences = mapOf(
 	'n' to '\n',
 	'r' to '\r',
@@ -40,7 +42,7 @@ fun scanToken(str: String): List<Token> {
 			tokens.add(
 				when (matchedPrefix) {
 					"<<=" -> LShiftAssign(line)
-					"<<=" -> RShiftAssign(line)
+					">>=" -> RShiftAssign(line)
 					"**=" -> PowAssign(line)
 					"<<" -> Bitwise_LShift(line)
 					">>" -> Bitwise_RShift(line)

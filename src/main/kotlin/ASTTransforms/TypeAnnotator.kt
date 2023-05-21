@@ -1,4 +1,0 @@
-package ASTTransforms
-
-class TypeAnnotator {
-}

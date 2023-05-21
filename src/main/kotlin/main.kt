@@ -1,5 +1,9 @@
 import AST.Declaration
-import ParserExceptions.ParserException
+import ASTTransforms.ASTPrinter
+import Parser.CodeParser
+import Parser.ParserException
+import Tokenizer.Token
+import Tokenizer.scanToken
 import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.Paths
@@ -19,7 +23,7 @@ fun main(args: Array<String>) {
 fun runPrompt() {
 	while (true) {
 		print("> ")
-		val line: String? = readLine()
+		val line: String? = readlnOrNull()
 		if (line != null && line != "") {
 			runcode(line)
 		} else {
@@ -39,17 +43,27 @@ fun runFile(path: String) {
 
 fun runcode(lines: String) {
 	val tokens: List<Token> = scanToken(lines)
-	val parser: Parser = Parser(tokens as MutableList<Token>)
-	var hadError = true;
-	var tree: List<Declaration> = listOf();
-	while (hadError)
+	val codeParser: CodeParser = CodeParser(tokens as MutableList<Token>)
+	var hadError = true
+	var errorNum = 0
+	var tree: List<Declaration> = listOf()
+	do {
 		try {
-			hadError = false;
-			tree = tree + parser.parseProgram()
+			hadError = false
+			tree = tree + codeParser.parseProgram()
 			println(tree)
 		} catch (p: ParserException) {
-			hadError = true;
+			hadError = true
+			errorNum++
 			println(p.s)
-			tree = parser.synchronize() + tree
+			tree = codeParser.synchronize() + tree
 		}
+	} while (hadError)
+	if (hadError) {
+		println("Had ${errorNum} error${if (errorNum == 1) "" else "s"}.")
+		return
+	}
+	val astPrint = ASTPrinter()
+	astPrint.visitTree(tree)
+
 }

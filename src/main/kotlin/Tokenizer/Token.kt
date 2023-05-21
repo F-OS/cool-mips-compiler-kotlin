@@ -1,3 +1,5 @@
+package Tokenizer
+
 sealed class Token(open val line: Int?)
 
 class EndOfFile(override val line: Int = -1) : Token(line)

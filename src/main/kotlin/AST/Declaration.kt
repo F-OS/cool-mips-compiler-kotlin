@@ -10,7 +10,7 @@ sealed class Declaration(line: Int) : ASTRoot(line) {
 
 class SimpleVarDeclaration(val name: Pair<String, String>, val definition: Expression?, line: Int) : Declaration(line) {
 	override fun accept(visitor: Visitor) {
-		visitor.visit(this)
+		return visitor.visit(this)
 	}
 }
 
@@ -23,27 +23,27 @@ class ArrayDeclaration(
 	line
 ) {
 	override fun accept(visitor: Visitor) {
-		visitor.visit(this)
+		return visitor.visit(this)
 	}
 }
 
 class EnumDeclaration(val name: String, var members: List<Pair<String, Long>>, line: Int) : Declaration(line) {
 	override fun accept(visitor: Visitor) {
-		visitor.visit(this)
+		return visitor.visit(this)
 	}
 }
 
 class ClassDeclaration(val name: String, var members: List<Declaration>, var inheritsfrom: List<String>, line: Int) :
 	Declaration(line) {
 	override fun accept(visitor: Visitor) {
-		visitor.visit(this)
+		return visitor.visit(this)
 	}
 }
 
 class StructDeclaration(val name: String, var members: List<Declaration>, line: Int) :
 	Declaration(line) {
 	override fun accept(visitor: Visitor) {
-		visitor.visit(this)
+		return visitor.visit(this)
 	}
 }
 
@@ -52,6 +52,6 @@ class FunctionDeclaration(
 	line: Int
 ) : Declaration(line) {
 	override fun accept(visitor: Visitor) {
-		visitor.visit(this)
+		return visitor.visit(this)
 	}
 }
