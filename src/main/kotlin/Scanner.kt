@@ -6,205 +6,130 @@ val escapeSequences = mapOf(
 	'\\' to '\\',
 	'\"' to '\"'
 )
-val StringLitRegex = "\"(\\\\.|[^\"])*\"".toRegex()
+
+val stringLitRegex = "\"(\\\\.|[^\"])*\"".toRegex()
+
 fun scanToken(str: String): List<Token> {
 	val tokens = mutableListOf<Token>()
-	var stridx = 0
-	var line = 1;
-	val strlen = str.length
-	while (stridx < strlen) {
-		while (str[stridx].isWhitespace() || str[stridx] == '\n' || str[stridx] == '\r') {
-			line += if (str[stridx] == '\n' || str[stridx] == '\r') 1 else 0
-			stridx++
+	var strIdx = 0
+	var line = 1
+	val strLen = str.length
+	while (strIdx < strLen) {
+		while (str[strIdx].isWhitespace() || str[strIdx] == '\n' || str[strIdx] == '\r') {
+			line += if (str[strIdx] == '\n' || str[strIdx] == '\r') 1 else 0
+			strIdx++
 		}
-		if (str[stridx] == '/' && str[stridx + 1] == '/') {
-			stridx += 2;
-			while (str[stridx] != '\n' && str[stridx] != '\r') {
-				stridx++;
+
+		if (str.startsWith("//", strIdx)) {
+			strIdx += 2
+			while (strIdx < strLen && str[strIdx] != '\n' && str[strIdx] != '\r') {
+				strIdx++
 			}
 			line++
 			continue
 		}
-		if (str.startsWith("<<=", stridx, ignoreCase = true)) {
-			stridx += 3
-			tokens.add(LShiftAssign(line))
-		} else if (str.startsWith(">>=", stridx, ignoreCase = true)) {
-			stridx += 3
-			tokens.add(RShiftAssign(line))
-		} else if (str.startsWith("**=", stridx, ignoreCase = true)) {
-			stridx += 3
-			tokens.add(PowAssign(line))
-		} else if (str.startsWith("**", stridx, ignoreCase = true)) {
-			stridx += 2
-			tokens.add(Pow(line))
-		} else if (str.startsWith("+=", stridx, ignoreCase = true)) {
-			stridx += 2
-			tokens.add(AddAssign(line))
-		} else if (str.startsWith("-=", stridx, ignoreCase = true)) {
-			stridx += 2
-			tokens.add(SubAssign(line))
-		} else if (str.startsWith("*=", stridx, ignoreCase = true)) {
-			stridx += 2
-			tokens.add(MulAssign(line))
-		} else if (str.startsWith("/=", stridx, ignoreCase = true)) {
-			stridx += 2
-			tokens.add(DivAssign(line))
-		} else if (str.startsWith("%=", stridx, ignoreCase = true)) {
-			stridx += 2
-			tokens.add(ModAssign(line))
-		} else if (str.startsWith("&=", stridx, ignoreCase = true)) {
-			stridx += 2
-			tokens.add(AndAssign(line))
-		} else if (str.startsWith("|=", stridx, ignoreCase = true)) {
-			stridx += 2
-			tokens.add(OrAssign(line))
-		} else if (str.startsWith("^=", stridx, ignoreCase = true)) {
-			stridx += 2
-			tokens.add(XorAssign(line))
-		} else if (str.startsWith("++", stridx, ignoreCase = true)) {
-			stridx += 2
-			tokens.add(Inc(line))
-		} else if (str.startsWith("--", stridx, ignoreCase = true)) {
-			stridx += 2
-			tokens.add(Dec(line))
-		} else if (str.startsWith(">>", stridx, ignoreCase = true)) {
-			stridx += 2
-			tokens.add(Bitwise_RShift(line))
-		} else if (str.startsWith("<<", stridx, ignoreCase = true)) {
-			stridx += 2
-			tokens.add(Bitwise_LShift(line))
-		} else if (str.startsWith("||", stridx, ignoreCase = true)) {
-			stridx += 2
-			tokens.add(Or(line))
-		} else if (str.startsWith("&&", stridx, ignoreCase = true)) {
-			stridx += 2
-			tokens.add(And(line))
-		} else if (str.startsWith("<", stridx, ignoreCase = true)) {
-			stridx += 2
-			tokens.add(LessThan(line))
-		} else if (str.startsWith("<=", stridx, ignoreCase = true)) {
-			stridx += 2
-			tokens.add(LessEqual(line))
-		} else if (str.startsWith(">", stridx, ignoreCase = true)) {
-			stridx += 2
-			tokens.add(GreaterThan(line))
-		} else if (str.startsWith(">=", stridx, ignoreCase = true)) {
-			stridx += 2
-			tokens.add(GreaterEqual(line))
-		} else if (str.startsWith("==", stridx, ignoreCase = true)) {
-			stridx += 2
-			tokens.add(EqualTo(line))
-		} else if (str.startsWith("!=", stridx, ignoreCase = true)) {
-			stridx += 2
-			tokens.add(NotEqualTo(line))
-		} else if (str.startsWith("^", stridx, ignoreCase = true)) {
-			stridx += 1
-			tokens.add(Bitwise_Xor(line))
-		} else if (str.startsWith("~", stridx, ignoreCase = true)) {
-			stridx += 1
-			tokens.add(Bitwise_Not(line))
-		} else if (str.startsWith("|", stridx, ignoreCase = true)) {
-			stridx += 1
-			tokens.add(Bitwise_Or(line))
-		} else if (str.startsWith("&", stridx, ignoreCase = true)) {
-			stridx += 1
-			tokens.add(Bitwise_And(line))
-		} else if (str.startsWith("!", stridx, ignoreCase = true)) {
-			stridx += 1
-			tokens.add(Not(line))
-		} else if (str.startsWith("+", stridx, ignoreCase = true)) {
-			stridx += 1
-			tokens.add(Add(line))
-		} else if (str.startsWith("-", stridx, ignoreCase = true)) {
-			stridx += 1
-			tokens.add(Sub(line))
-		} else if (str.startsWith("*", stridx, ignoreCase = true)) {
-			stridx += 1
-			tokens.add(Mul(line))
-		} else if (str.startsWith("?", stridx, ignoreCase = true)) {
-			stridx += 1
-			tokens.add(QMark(line))
-		} else if (str.startsWith(":", stridx, ignoreCase = true)) {
-			stridx += 1
-			tokens.add(Colon(line))
-		} else if (str.startsWith("/", stridx, ignoreCase = true)) {
-			stridx += 1
-			tokens.add(Div(line))
-		} else if (str.startsWith("%", stridx, ignoreCase = true)) {
-			stridx += 1
-			tokens.add(Mod(line))
-		} else if (str.startsWith(".", stridx, ignoreCase = true)) {
-			stridx += 1
-			tokens.add(Dot(line))
-		} else if (str.startsWith("=", stridx, ignoreCase = true)) {
-			stridx += 1
-			tokens.add(Assign(line))
-		} else if (str.startsWith(",", stridx, ignoreCase = true)) {
-			stridx += 1
-			tokens.add(Comma(line))
-		} else if (str.startsWith(";", stridx, ignoreCase = true)) {
-			stridx += 1
-			tokens.add(Semicolon(line))
-		} else if (str.startsWith("}", stridx, ignoreCase = true)) {
-			stridx += 1
-			tokens.add(RBrace(line))
-		} else if (str.startsWith("{", stridx, ignoreCase = true)) {
-			stridx += 1
-			tokens.add(LBrace(line))
-		} else if (str.startsWith("]", stridx, ignoreCase = true)) {
-			stridx += 1
-			tokens.add(RBracket(line))
-		} else if (str.startsWith("[", stridx, ignoreCase = true)) {
-			stridx += 1
-			tokens.add(LBracket(line))
-		} else if (str.startsWith("(", stridx, ignoreCase = true)) {
-			stridx += 1
-			tokens.add(LParen(line))
-		} else if (str.startsWith(")", stridx, ignoreCase = true)) {
-			stridx += 1
-			tokens.add(RParen(line))
-		} else if (str.startsWith("\'", stridx, ignoreCase = true)) {
-			stridx += 1
-			if (str[stridx] != '\\') {
-				stridx += 1
-				val char = escapeSequences[str[stridx]] ?: str[stridx]
+
+		val prefixes = listOf(
+			"<<=", ">>=", "**=", "**", "+=", "-=", "*=", "/=", "%=", "&=", "|=", "^=",
+			"++", "--", ">>", "<<", "||", "&&", "<=", ">=", "==", "!=", "^", "~", "|", "&", "!", "+", "-",
+			"*", "?", ":", "/", "%", ".", "<", ">", "=", ",", ";", "}", "{", "]", "[", "(", ")"
+		)
+		val matchedPrefix = prefixes.find { str.startsWith(it, strIdx, ignoreCase = true) }
+		if (matchedPrefix != null) {
+			strIdx += matchedPrefix.length
+			tokens.add(
+				when (matchedPrefix) {
+					"<<=" -> LShiftAssign(line)
+					"<<=" -> RShiftAssign(line)
+					"**=" -> PowAssign(line)
+					"<<" -> Bitwise_LShift(line)
+					">>" -> Bitwise_RShift(line)
+					"**" -> Pow(line)
+					"+=" -> AddAssign(line)
+					"-=" -> SubAssign(line)
+					"*=" -> MulAssign(line)
+					"/=" -> DivAssign(line)
+					"%=" -> ModAssign(line)
+					"&=" -> AndAssign(line)
+					"|=" -> OrAssign(line)
+					"^=" -> XorAssign(line)
+					"++" -> Inc(line)
+					"--" -> Dec(line)
+					"||" -> Or(line)
+					"&&" -> And(line)
+					"<=" -> LessEqual(line)
+					">=" -> GreaterEqual(line)
+					"==" -> EqualTo(line)
+					"!=" -> NotEqualTo(line)
+					"<" -> LessThan(line)
+					">" -> GreaterThan(line)
+					"^" -> Bitwise_Xor(line)
+					"~" -> Bitwise_Not(line)
+					"|" -> Bitwise_Or(line)
+					"&" -> Bitwise_And(line)
+					"!" -> Not(line)
+					"+" -> Add(line)
+					"-" -> Sub(line)
+					"*" -> Mul(line)
+					"?" -> QMark(line)
+					":" -> Colon(line)
+					"/" -> Div(line)
+					"%" -> Mod(line)
+					"." -> Dot(line)
+					"=" -> Assign(line)
+					"," -> Comma(line)
+					";" -> Semicolon(line)
+					"}" -> RBrace(line)
+					"{" -> LBrace(line)
+					"]" -> RBracket(line)
+					"[" -> LBracket(line)
+					"(" -> LParen(line)
+					")" -> RParen(line)
+					else -> throw IllegalArgumentException("Prefix in table prefixes but not in when block in scanner.")
+				}
+			)
+		} else if (str.startsWith("\'", strIdx, ignoreCase = true)) {
+			strIdx += 1
+			if (str[strIdx] != '\\') {
+				strIdx += 1
+				val char = escapeSequences[str[strIdx]] ?: str[strIdx]
 				tokens.add(CharTok(char, line))
 			} else {
-				tokens.add(CharTok(str[stridx], line))
-				stridx += 1
+				tokens.add(CharTok(str[strIdx], line))
+				strIdx += 1
 			}
-		} else if (str[stridx].isDigit()) {
+		} else if (str[strIdx].isDigit()) {
 			var span = 0
-			for (c in str.substring(stridx)) {
+			for (c in str.substring(strIdx)) {
 				if (c.isDigit() || c == '.') {
 					span++
 				} else {
 					break
 				}
 			}
-			val num = str.substring(stridx, stridx + span)
-			stridx += span
+			val num = str.substring(strIdx, strIdx + span)
+			strIdx += span
 			val isint = !num.contains(".")
 			if (isint) {
 				tokens.add(Num(true, num.toLong(), 0.0, line))
 			} else {
 				tokens.add(Num(false, 0, num.toDouble(), line))
 			}
-		} else if (str[stridx].isLetter() || str[stridx] == '_') {
+		} else if (str[strIdx].isLetter() || str[strIdx] == '_') {
 			var span = 0
-			for (c in str.substring(stridx)) {
+			for (c in str.substring(strIdx)) {
 				if (c.isLetter() || c == '_') {
 					span++
 				} else {
 					break
 				}
 			}
-			val ident = str.substring(stridx, stridx + span).lowercase()
-			stridx += span
+			val ident = str.substring(strIdx, strIdx + span).lowercase()
+			strIdx += span
 			tokens.add(Ident(ident, line))
-		} else if (str.startsWith("\"", stridx, ignoreCase = true)) {
-			val matchResult: String = StringLitRegex.find(str.substring(stridx))?.value ?: ""
-			stridx += matchResult.length
+		} else if (str.startsWith("\"", strIdx, ignoreCase = true)) {
+			val matchResult: String = stringLitRegex.find(str.substring(strIdx))?.value ?: ""
+			strIdx += matchResult.length
 
 			val escapedLiteral = StringBuilder()
 
@@ -225,7 +150,7 @@ fun scanToken(str: String): List<Token> {
 			}
 			tokens.add(StringTok(escapedLiteral.toString(), line))
 		} else {
-			tokens.add(Unimplemented(str[stridx++], line))
+			tokens.add(Unimplemented(str[strIdx++], line))
 		}
 	}
 	tokens.add(EndOfFile(line))
