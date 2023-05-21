@@ -1,8 +1,32 @@
+struct Vec {
+    var x: int;
+    var y: int;
+}
+
+class vehicle {
+    var speed: int;
+    var location: Vec;
+}
+
+class car: vehicle {
+    var engine: Engine;
+    array wheels: Wheel[4] = {Wheel(), Wheel(), Wheel(), Wheel()};
+}
+
+class truck: (car, vehicle)
 {
-// This is a comment test
-    x = 50; // This is an EOL comment test
-    y = 54;
-    for(i = 0; i < 25; i++)
+    fun vroom_vroom(): void
+    {
+        print("Car go vroom vroom");
+    }
+}
+
+fun main(): void
+{
+    // This is a comment test
+    var x: Int = 50; // This is an EOL comment test
+    var y: Int = 54;
+    for(var i: Int = 0; i < 25; i++)
     {
         print(i);
     }

@@ -1,4 +1,4 @@
-package ParserExcptions
+package ParserExceptions
 
 open class ParserException(var s: String) : Throwable()
 class ExpressionParserException(s: String) : ParserException(s)

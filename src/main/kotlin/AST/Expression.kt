@@ -8,7 +8,8 @@ sealed class Expression(line: Int) : ASTRoot(line) {
 	}
 }
 
-class Lambda(val params: List<String>, val block: Statement, line: Int) : Expression(line) {
+class Lambda(val params: List<Pair<String, String>>, val block: Statement, var return_type: String, line: Int) :
+	Expression(line) {
 	override fun accept(visitor: Visitor) {
 		visitor.visit(this)
 	}

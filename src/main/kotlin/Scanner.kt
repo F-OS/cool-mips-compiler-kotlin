@@ -98,23 +98,6 @@ fun scanToken(str: String): List<Token> {
 				tokens.add(CharTok(str[strIdx], line))
 				strIdx += 1
 			}
-		} else if (str[strIdx].isDigit()) {
-			var span = 0
-			for (c in str.substring(strIdx)) {
-				if (c.isDigit() || c == '.') {
-					span++
-				} else {
-					break
-				}
-			}
-			val num = str.substring(strIdx, strIdx + span)
-			strIdx += span
-			val isint = !num.contains(".")
-			if (isint) {
-				tokens.add(Num(true, num.toLong(), 0.0, line))
-			} else {
-				tokens.add(Num(false, 0, num.toDouble(), line))
-			}
 		} else if (str[strIdx].isLetter() || str[strIdx] == '_') {
 			var span = 0
 			for (c in str.substring(strIdx)) {
@@ -124,15 +107,31 @@ fun scanToken(str: String): List<Token> {
 					break
 				}
 			}
-			val ident = str.substring(strIdx, strIdx + span).lowercase()
+			val ident = str.substring(strIdx, strIdx + span)
 			strIdx += span
 			tokens.add(Ident(ident, line))
+		} else if (Character.digit(str[strIdx], 16) != -1) {
+			var span = 0
+			for (c in str.substring(strIdx)) {
+				if (Character.digit(str[strIdx + span], 16) != -1 || c == '.') {
+					span++
+				} else {
+					break
+				}
+			}
+			val num = str.substring(strIdx, strIdx + span)
+			strIdx += span
+			val isint = !num.contains(".")
+			if (isint) {
+				tokens.add(Num(true, Integer.decode(num).toLong(), 0.0, line))
+			} else {
+				tokens.add(Num(false, 0, num.toDouble(), line))
+			}
 		} else if (str.startsWith("\"", strIdx, ignoreCase = true)) {
 			val matchResult: String = stringLitRegex.find(str.substring(strIdx))?.value ?: ""
 			strIdx += matchResult.length
 
 			val escapedLiteral = StringBuilder()
-
 			var i = 0
 			while (i < matchResult.length) {
 				val currentChar = matchResult[i]

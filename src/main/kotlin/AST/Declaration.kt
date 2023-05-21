@@ -8,13 +8,18 @@ sealed class Declaration(line: Int) : ASTRoot(line) {
 	}
 }
 
-class SimpleVarDeclaration(val name: String, val definition: Expression?, line: Int) : Declaration(line) {
+class SimpleVarDeclaration(val name: Pair<String, String>, val definition: Expression?, line: Int) : Declaration(line) {
 	override fun accept(visitor: Visitor) {
 		visitor.visit(this)
 	}
 }
 
-class ArrayDeclaration(val name: String, val size: Integer?, var definition: List<Expression>, line: Int) : Declaration(
+class ArrayDeclaration(
+	val name: Pair<String, String>,
+	val size: Long,
+	var definition: List<Expression>,
+	line: Int
+) : Declaration(
 	line
 ) {
 	override fun accept(visitor: Visitor) {
@@ -22,7 +27,7 @@ class ArrayDeclaration(val name: String, val size: Integer?, var definition: Lis
 	}
 }
 
-class EnumDeclaration(val name: String, var members: List<Pair<String, Int>>, line: Int) : Declaration(line) {
+class EnumDeclaration(val name: String, var members: List<Pair<String, Long>>, line: Int) : Declaration(line) {
 	override fun accept(visitor: Visitor) {
 		visitor.visit(this)
 	}
@@ -35,8 +40,15 @@ class ClassDeclaration(val name: String, var members: List<Declaration>, var inh
 	}
 }
 
+class StructDeclaration(val name: String, var members: List<Declaration>, line: Int) :
+	Declaration(line) {
+	override fun accept(visitor: Visitor) {
+		visitor.visit(this)
+	}
+}
+
 class FunctionDeclaration(
-	val name: String, var parameters: List<String>, var body: Block,
+	val name: String, var parameters: List<Pair<String, String>>, var returnType: String, var body: Block,
 	line: Int
 ) : Declaration(line) {
 	override fun accept(visitor: Visitor) {

@@ -36,5 +36,6 @@ interface Visitor {
 	fun visit(node: ArrayDeclaration)
 	fun visit(node: EnumDeclaration)
 	fun visit(node: ClassDeclaration)
+	fun visit(node: StructDeclaration)
 	fun visit(node: FunctionDeclaration)
 }

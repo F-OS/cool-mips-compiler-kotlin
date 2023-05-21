@@ -1,4 +1,5 @@
-import ParserExcptions.ParserException
+import AST.Declaration
+import ParserExceptions.ParserException
 import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.Paths
@@ -38,12 +39,17 @@ fun runFile(path: String) {
 
 fun runcode(lines: String) {
 	val tokens: List<Token> = scanToken(lines)
-	println(tokens)
 	val parser: Parser = Parser(tokens as MutableList<Token>)
-	try {
-		val tree = parser.parseDeclaration()
-		println(tree)
-	} catch (p: ParserException) {
-		println(p.s)
-	}
+	var hadError = true;
+	var tree: List<Declaration> = listOf();
+	while (hadError)
+		try {
+			hadError = false;
+			tree = tree + parser.parseProgram()
+			println(tree)
+		} catch (p: ParserException) {
+			hadError = true;
+			println(p.s)
+			tree = parser.synchronize() + tree
+		}
 }
