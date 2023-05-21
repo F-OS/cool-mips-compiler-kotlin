@@ -1045,6 +1045,11 @@ class Parser(private val tokens: MutableList<Token>) {
 		return Switch(conditional, cases, line)
 	}
 
+	/**
+	 * Parses a label
+	 * @return The parsed label.
+	 * @grammar LabelStatement -> Identifier ":"
+	 */
 	private fun parseLabel(): Statement {
 		val line = tokens[0].line!!
 		val label =
@@ -1053,6 +1058,11 @@ class Parser(private val tokens: MutableList<Token>) {
 		return Label(label, line)
 	}
 
+	/**
+	 * Parses an assignment
+	 * @return The parsed assignment.
+	 * @grammar AssignmentStatement -> Expression ("+=" | "-=" | "*=" | "/=" | "%=" | "**=" | "&=" | "|=" | "^=" | "<<=" | ">>=") Expression
+	 */
 	private fun parseAssignment(lhs: Expression): Statement {
 		val line = tokens[0].line!!
 		val tok = tokens[0];
@@ -1133,6 +1143,11 @@ class Parser(private val tokens: MutableList<Token>) {
 		return Assignment(lhs, parseExpression(), line)
 	}
 
+	/**
+	 * Parses a return statement
+	 * @return The parsed return statement.
+	 * @grammar ReturnStatement -> "return" [ ExpressionStatement ];
+	 */
 	private fun parseReturn(): Statement {
 		val line = tokens[0].line!!
 		return if (tokens[0] is Semicolon) {
@@ -1141,7 +1156,12 @@ class Parser(private val tokens: MutableList<Token>) {
 			Return(parseExpression(), line)
 		}
 	}
-
+	
+	/**
+	 * Parses a return statement
+	 * @return The parsed return statement.
+	 * @grammar ReturnStatement -> "return" [ ExpressionStatement ];
+	 */
 	private fun parseGoto(): Statement {
 		val line = tokens[0].line!!
 		val label = (expectToken(
