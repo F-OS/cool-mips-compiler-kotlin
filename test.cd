@@ -1,6 +1,70 @@
 {
-    x = 50;
+// This is a comment test
+    x = 50; // This is an EOL comment test
     y = 54;
+    for(i = 0; i < 25; i++)
+    {
+        print(i);
+    }
+    for(i = 0;)
+    {
+        if(i >= 25)
+        {
+            break;
+        }
+        i++;
+    }
+    switch(casetest)
+    {
+        case 1:
+        {
+            print("Less than 10");
+        }
+        case 2:
+        {
+            print("Less than 10");
+        }
+        case 3:
+        {
+            print("Less than 10");
+        }
+        case 4:
+        {
+            print("Less than 10");
+        }
+        case 5:
+        {
+            print("Less than 10");
+        }
+        case 6:
+        {
+            print("Less than 10");
+        }
+        case 7:
+        {
+            print("Less than 10");
+        }
+        case 8:
+        {
+            print("Less than 10");
+        }
+        case 9:
+        {
+            print("Less than 10");
+        }
+        default:
+        {
+          print("Not less than 10");
+        }
+    }
+    for(; i <= 25)
+    {
+        i++;
+    }
+    while(x > 0)
+    {
+        x--;
+    }
     if(x == 3 || y > 48)
     {
         return x + 1;

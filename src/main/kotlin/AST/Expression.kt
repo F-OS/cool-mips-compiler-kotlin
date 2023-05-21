@@ -66,7 +66,7 @@ class VariableAccess(val ident: String = "GENERIC", line: Int) : Expression(line
 	}
 }
 
-class Modify(val ident: String = "GENERIC", val return_previous: Boolean, val modify_by: Expression, line: Int) :
+class Modify(val ident: Expression, val return_previous: Boolean, val modify_by: Expression, line: Int) :
 	Expression(line) {
 	override fun accept(visitor: Visitor) {
 		visitor.visit(this)

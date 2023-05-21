@@ -10,9 +10,21 @@ val StringLitRegex = "\"(\\\\.|[^\"])*\"".toRegex()
 fun scanToken(str: String): List<Token> {
 	val tokens = mutableListOf<Token>()
 	var stridx = 0
-	var line = 0;
+	var line = 1;
 	val strlen = str.length
 	while (stridx < strlen) {
+		while (str[stridx].isWhitespace() || str[stridx] == '\n' || str[stridx] == '\r') {
+			line += if (str[stridx] == '\n' || str[stridx] == '\r') 1 else 0
+			stridx++
+		}
+		if (str[stridx] == '/' && str[stridx + 1] == '/') {
+			stridx += 2;
+			while (str[stridx] != '\n' && str[stridx] != '\r') {
+				stridx++;
+			}
+			line++
+			continue
+		}
 		if (str.startsWith("<<=", stridx, ignoreCase = true)) {
 			stridx += 3
 			tokens.add(LShiftAssign(line))
@@ -191,7 +203,7 @@ fun scanToken(str: String): List<Token> {
 			stridx += span
 			tokens.add(Ident(ident, line))
 		} else if (str.startsWith("\"", stridx, ignoreCase = true)) {
-			val matchResult: String = StringLitRegex.find(str)?.value ?: ""
+			val matchResult: String = StringLitRegex.find(str.substring(stridx))?.value ?: ""
 			stridx += matchResult.length
 
 			val escapedLiteral = StringBuilder()
@@ -212,9 +224,6 @@ fun scanToken(str: String): List<Token> {
 				i++
 			}
 			tokens.add(StringTok(escapedLiteral.toString(), line))
-		} else if (str[stridx].isWhitespace()) {
-			line += if (str[stridx] == '\n' || str[stridx] == '\r') 1 else 0
-			stridx++
 		} else {
 			tokens.add(Unimplemented(str[stridx++], line))
 		}

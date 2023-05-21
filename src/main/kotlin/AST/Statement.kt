@@ -17,8 +17,8 @@ class If(val conditional: Expression, val consequent: Statement, val alternate: 
 
 class For(
 	val initalizer: Declaration?,
-	val conditional: Expression?,
-	val iteration: Statement?,
+	val conditional: Declaration?,
+	val iteration: Declaration?,
 	val body: Statement, line: Int
 ) : Statement(line) {
 	override fun accept(visitor: Visitor) {
@@ -68,7 +68,7 @@ class Switch(val switchon: Expression, val cases: List<Pair<Expression, Statemen
 	}
 }
 
-class Assignment(val ident: String, val expr: Expression, line: Int) : Statement(line) {
+class Assignment(val ident: Expression, val expr: Expression, line: Int) : Statement(line) {
 	override fun accept(visitor: Visitor) {
 		visitor.visit(this)
 	}
@@ -100,7 +100,7 @@ class Throw(val ident: String, val params: List<Expression>, line: Int) : Statem
 }
 
 // Handles void function calls or expressions without side effects.
-class ExprStatement(val expr: Expression, line: Int) : Statement(line) {
+class ExprStatement(val expr: Expression? = null, line: Int) : Statement(line) {
 	override fun accept(visitor: Visitor) {
 		visitor.visit(this)
 	}
