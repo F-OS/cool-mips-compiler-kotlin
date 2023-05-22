@@ -1,5 +1,5 @@
 package ASTTransforms
 interface Visitable {
-    fun accept(visitor: Visitor)
+    fun accept(visitor: Visitor): Any?
 }
 

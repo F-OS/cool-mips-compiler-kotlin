@@ -4,7 +4,7 @@ struct Vec {
     var y: int;
 }
 
-class Vehicle {
+class vehicle {
     var speed: int;
     var location: Vec;
 }
@@ -17,12 +17,12 @@ class Engine {
     var power: Int = 3600;
 }
 
-class Car: Vehicle {
+class car: vehicle {
     var engine: Engine;
     array wheels: Wheel[4] = {Wheel(), Wheel(), Wheel(), Wheel()};
 }
 
-class Truck: (Car, Vehicle)
+class truck: (car, vehicle)
 {
     fun vroom_vroom(): void
     {
@@ -169,7 +169,7 @@ fun main(): void
         b = b / 2;
         return x + 1 | 2 + 3 ^ 4 & 5 | 4;
     }
-    var obj: Truck = Truck();
+    var obj: Vehicle = Truck();
     var character: char = '\n';
     var im_a_normal_char: char = 'c';
     var funni_prog: string = "hello world";
@@ -189,15 +189,90 @@ fun main(): void
     return;
 
     try {
-        for(var i: int = 0; i < 25; i++)
-        {
-            if(i == 25)
-            {
-                throw badlogic();
-            }
-        }
-    } catch(e: badlogic)
+        print(1/0);
+    } catch(e: dividebyzero)
     {
         print(e);
     }
+}
+// These lines should generate errors
+ fun thisisthebadplace(): void
+{   var \\\\\\;
+;;
+for( {
+   a = a = a = a = a = a = a = a = a
+}
+var 5 = x
+struct class X {
+
+}
+
+class class : class
+{
+
+}
+}
+
+fun class fun class fun struct fun fun struct fun var fun class fun struct enum
+
+fun warn_me(,,,,,,a: int b: int, c: int): int
+{
+
+}
+
+array theressomethingwrongicanfeelit: int[3.14];
+
+fun evil) a: muhahaha(: int
+{
+
+}
+
+fun lessevil(a: muhaha(: int
+{
+
+}
+
+
+class smileyinheritance :) {
+    var a = b;
+}
+
+class frownyinheritance : (a, b, c, d :( {
+    var a = b;
+}
+
+enum ninthamendment {}
+
+var x: Int = 5;
+
+enum floatmetothemoon {
+    A: 4.1,
+    G: 5.3,
+}
+
+enum disturbing {
+    A: 4,
+    B: "bee",
+    5: C,
+    E: 2.3821,
+    F:,
+    G
+}
+
+enum disturbing {
+    A: 4,
+    G: 5,
+}
+throw uh_oh;
+throw UH_OH(;
+while((a == 0) + (b == 0))
+{
+    print(c);
+}
+
+for(var x: int = 0; i + 2; i < 25)
+{
+    print(x);
+}
+
 }
